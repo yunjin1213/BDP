@@ -24,7 +24,7 @@ CREATE EXTERNAL TABLE area_population (
   young_20s_ratio DOUBLE
 )
 STORED AS PARQUET
-LOCATION '${hiveconf:HDFS_BASE_DIR}/processed/area_population';
+LOCATION '${hivevar:hdfs_base_dir}/processed/area_population';
 
 DROP TABLE IF EXISTS area_subway;
 CREATE EXTERNAL TABLE area_subway (
@@ -45,7 +45,7 @@ CREATE EXTERNAL TABLE area_subway (
   alighting_count BIGINT
 )
 STORED AS PARQUET
-LOCATION '${hiveconf:HDFS_BASE_DIR}/processed/area_subway';
+LOCATION '${hivevar:hdfs_base_dir}/processed/area_subway';
 
 DROP TABLE IF EXISTS result_population_phase_change;
 DROP TABLE IF EXISTS result_young_population_lift;

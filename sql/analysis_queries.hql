@@ -42,7 +42,7 @@ FROM (
   GROUP BY semester, exam_type, area_id, area_name, area_type
 ) phase_summary;
 
-INSERT OVERWRITE DIRECTORY '${hiveconf:RESULTS_DIR}/population_phase_change'
+INSERT OVERWRITE DIRECTORY '${hivevar:results_dir}/population_phase_change'
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
 SELECT
   semester,
@@ -111,7 +111,7 @@ FROM (
   ) lifted
 ) ranked;
 
-INSERT OVERWRITE DIRECTORY '${hiveconf:RESULTS_DIR}/young_population_lift'
+INSERT OVERWRITE DIRECTORY '${hivevar:results_dir}/young_population_lift'
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
 SELECT
   semester,
@@ -179,7 +179,7 @@ FROM (
   ) lifted
 ) ranked;
 
-INSERT OVERWRITE DIRECTORY '${hiveconf:RESULTS_DIR}/subway_alighting_lift'
+INSERT OVERWRITE DIRECTORY '${hivevar:results_dir}/subway_alighting_lift'
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
 SELECT
   semester,
@@ -259,7 +259,7 @@ FROM (
   ) joined
 ) compared;
 
-INSERT OVERWRITE DIRECTORY '${hiveconf:RESULTS_DIR}/hotplace_rank_compare'
+INSERT OVERWRITE DIRECTORY '${hivevar:results_dir}/hotplace_rank_compare'
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
 SELECT
   semester,
@@ -346,7 +346,7 @@ FROM (
    AND pop.area_type = sub.area_type
 ) merged;
 
-INSERT OVERWRITE DIRECTORY '${hiveconf:RESULTS_DIR}/area_type_change'
+INSERT OVERWRITE DIRECTORY '${hivevar:results_dir}/area_type_change'
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
 SELECT
   semester,

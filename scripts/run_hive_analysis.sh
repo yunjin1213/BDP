@@ -32,14 +32,14 @@ hdfs dfs -mkdir -p "${RESULTS_DIR}"
 
 echo "== Create Hive external tables =="
 hive \
-  --hiveconf HDFS_BASE_DIR="${HDFS_BASE_DIR}" \
-  --hiveconf RESULTS_DIR="${RESULTS_DIR}" \
+  --hivevar hdfs_base_dir="${HDFS_BASE_DIR}" \
+  --hivevar results_dir="${RESULTS_DIR}" \
   -f "${PROJECT_DIR}/sql/create_tables.hql"
 
 echo "== Run Hive analysis queries =="
 hive \
-  --hiveconf HDFS_BASE_DIR="${HDFS_BASE_DIR}" \
-  --hiveconf RESULTS_DIR="${RESULTS_DIR}" \
+  --hivevar hdfs_base_dir="${HDFS_BASE_DIR}" \
+  --hivevar results_dir="${RESULTS_DIR}" \
   -f "${PROJECT_DIR}/sql/analysis_queries.hql"
 
 echo "== Analysis results =="
