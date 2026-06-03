@@ -29,6 +29,7 @@ echo "RESULTS_DIR=${RESULTS_DIR}"
 
 echo "== Prepare results directory =="
 hdfs dfs -mkdir -p "${RESULTS_DIR}"
+hdfs dfs -chmod -R 777 "${HDFS_BASE_DIR}/processed" "${RESULTS_DIR}"
 
 echo "== Create Hive external tables =="
 hive \
