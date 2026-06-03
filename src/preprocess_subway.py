@@ -62,6 +62,11 @@ def first_existing_column(columns, candidates, required_name, required=True):
     )
 
 
+def require_non_empty(df, label):
+    if not df.take(1):
+        raise ValueError("Subway preprocessing produced no rows after {}.".format(label))
+
+
 def main():
     args = parse_args()
     spark = (
@@ -98,12 +103,12 @@ def main():
         )
 
     subway = (
-        raw.filter(F.col("승하차구분") == "하차")
+        raw.filter(F.trim(F.col("승하차구분")) == "하차")
         .select(
             F.col("수송일자").cast("string").alias("date_id"),
             F.col(line_column).alias("raw_line_name"),
-            F.col("역명").alias("raw_station_name"),
-            F.col("승객유형").alias("passenger_type"),
+            F.trim(F.col("역명")).alias("raw_station_name"),
+            F.trim(F.col("승객유형")).alias("passenger_type"),
             F.explode(F.array(*value_structs)).alias("time_value"),
         )
         .select(
@@ -114,19 +119,17 @@ def main():
             F.col("time_value.hour").alias("hour"),
             F.col("time_value.passenger_count").alias("passenger_count"),
         )
-        .withColumn(
-            "date",
-            F.coalesce(
-                F.to_date(F.col("date_id"), "yyyyMMdd"),
-                F.to_date(F.col("date_id"), "yyyy-MM-dd"),
-            ),
-        )
+        .withColumn("date_digits", F.regexp_replace(F.col("date_id"), "[^0-9]", ""))
+        .withColumn("date", F.to_date(F.col("date_digits"), "yyyyMMdd"))
+        .drop("date_digits")
         .filter(F.col("date").isNotNull())
         .filter(F.col("passenger_count").isNotNull())
     )
+    require_non_empty(subway, "date and passenger parsing")
 
     subway = add_time_band(subway)
     subway = subway.filter(F.col("time_band") != "other")
+    require_non_empty(subway, "time band filtering")
 
     station_names = spark.createDataFrame(STATION_NAME_ROWS, ["raw_station_name", "station_name"])
 
@@ -134,14 +137,16 @@ def main():
         spark.read.option("header", "true")
         .option("inferSchema", "false")
         .csv(args.mapping)
-        .select("area_id", "area_name", "area_type", "station_name")
+        .select("area_id", "area_name", "area_type", F.trim(F.col("station_name")).alias("station_name"))
         .dropDuplicates(["area_id", "station_name"])
     )
 
     exam_periods = spark.read.option("header", "true").option("inferSchema", "false").csv(args.exam_periods)
 
     joined = subway.join(F.broadcast(station_names), "raw_station_name", "inner")
+    require_non_empty(joined, "station name mapping join")
     joined = joined.join(F.broadcast(area_mapping), "station_name", "inner")
+    require_non_empty(joined, "area mapping join")
     joined = add_date_columns(joined)
     joined = add_exam_phase(joined, exam_periods)
 
