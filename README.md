@@ -218,11 +218,49 @@ bash scripts/upload_hdfs.sh
 bash scripts/run_preprocess.sh
 
 # Hive 테이블 생성 및 분석 쿼리 실행
-hive -f hive/create_tables.hql
-hive -f hive/analysis_queries.hql
+bash scripts/run_hive_analysis.sh
 ```
 
-현재 레포지토리에는 데이터 수집 스크립트가 우선 포함되어 있으며, HDFS 적재, Spark 전처리, Hive 분석 스크립트는 구현 과정에서 추가한다.
+`run_hive_analysis.sh`는 다음 작업을 순서대로 수행한다.
+
+1. `sql/create_tables.hql`을 실행하여 Spark 전처리 결과 Parquet을 Hive external table로 등록
+2. `sql/analysis_queries.hql`을 실행하여 분석 결과 테이블 생성
+3. 분석 결과를 HDFS `/user/${USER}/bdp/results` 아래에 저장
+
+기본 HDFS 경로를 바꾸려면 `HDFS_BASE_DIR`를 지정한다.
+
+```bash
+HDFS_BASE_DIR=/user/maria_dev/bdp bash scripts/run_hive_analysis.sh
+```
+
+생성되는 주요 Hive 테이블은 다음과 같다.
+
+| 구분 | 테이블 |
+| --- | --- |
+| 전처리 결과 | `bdp.area_population`, `bdp.area_subway` |
+| 분석 결과 | `bdp.result_population_phase_change` |
+| 분석 결과 | `bdp.result_young_population_lift` |
+| 분석 결과 | `bdp.result_subway_alighting_lift` |
+| 분석 결과 | `bdp.result_hotplace_rank_compare` |
+| 분석 결과 | `bdp.result_area_type_change` |
+
+분석 결과 HDFS 디렉토리는 다음과 같다.
+
+```text
+/user/${USER}/bdp/results/
+├── population_phase_change/
+├── young_population_lift/
+├── subway_alighting_lift/
+├── hotplace_rank_compare/
+└── area_type_change/
+```
+
+실행 후 결과 확인 예시는 다음과 같다.
+
+```bash
+hdfs dfs -ls /user/${USER}/bdp/results
+hive -e 'USE bdp; SELECT * FROM result_young_population_lift ORDER BY semester, exam_type, rank_no LIMIT 20;'
+```
 
 ## 10. Repository 구조
 
@@ -233,12 +271,12 @@ BDP/
 │   ├── download_data.sh
 │   ├── create_reference_data.sh
 │   ├── upload_hdfs.sh
-│   └── run_preprocess.sh
+│   ├── run_preprocess.sh
+│   └── run_hive_analysis.sh
 ├── src/
 │   ├── preprocess_people.py
-│   ├── preprocess_subway.py
-│   └── analyze_exam_periods.py
-├── hive/
+│   └── preprocess_subway.py
+├── sql/
 │   ├── create_tables.hql
 │   └── analysis_queries.hql
 └── results/
