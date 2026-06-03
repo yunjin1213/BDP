@@ -78,7 +78,7 @@ def main():
     raw = (
         spark.read.option("header", "true")
         .option("inferSchema", "false")
-        .option("encoding", "CP949")
+        .option("encoding", os.environ.get("SUBWAY_CSV_ENCODING", "CP949"))
         .csv(args.input)
     )
     raw = clean_columns(raw)
