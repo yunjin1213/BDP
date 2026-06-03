@@ -63,6 +63,8 @@ hdfs_put_csv_dir() {
   local hdfs_dir="$2"
   local file_prefix="$3"
   local index=1
+  local staging_dir
+  staging_dir="$(mktemp -d "${TMPDIR:-/tmp}/bdp_hdfs_upload.XXXXXX")"
 
   if [[ "${OVERWRITE}" == "1" ]]; then
     echo "[overwrite] ${hdfs_dir}"
@@ -75,11 +77,16 @@ hdfs_put_csv_dir() {
   echo "[put csv] ${local_dir}/*.csv -> ${hdfs_dir}"
   while IFS= read -r -d '' csv_file; do
     local hdfs_file
+    local staged_file
+    staged_file="$(printf "%s/%s_%03d.csv" "${staging_dir}" "${file_prefix}" "${index}")"
     hdfs_file="$(printf "%s/%s_%03d.csv" "${hdfs_dir}" "${file_prefix}" "${index}")"
+    cp "${csv_file}" "${staged_file}"
     echo "[put] ${csv_file} -> ${hdfs_file}"
-    hdfs dfs -put -f "${csv_file}" "${hdfs_file}"
+    hdfs dfs -put -f "${staged_file}" "${hdfs_file}"
     index=$((index + 1))
   done < <(find "${local_dir}" -maxdepth 1 -type f -name '*.csv' -print0)
+
+  rm -rf "${staging_dir}"
 }
 
 require_command hdfs
