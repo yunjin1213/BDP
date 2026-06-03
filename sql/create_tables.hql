@@ -50,3 +50,6 @@ DROP TABLE IF EXISTS result_young_population_lift;
 DROP TABLE IF EXISTS result_subway_alighting_lift;
 DROP TABLE IF EXISTS result_hotplace_rank_compare;
 DROP TABLE IF EXISTS result_area_type_change;
+DROP TABLE IF EXISTS result_time_band_young_lift;
+DROP TABLE IF EXISTS result_weekend_effect;
+DROP TABLE IF EXISTS result_after_vs_normal;
