@@ -20,17 +20,85 @@ FORCE="${FORCE:-0}"
 
 mkdir -p "${PEOPLE_DIR}" "${SUBWAY_DIR}" "${PEOPLE_ZIP_DIR}" "${SUBWAY_DOWNLOAD_DIR}"
 
+python_download() {
+  local url="$1"
+  local output_path="$2"
+
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "${url}" "${output_path}" <<'PY'
+import sys
+try:
+    from urllib.request import Request, urlopen
+except ImportError:
+    from urllib2 import Request, urlopen
+
+url = sys.argv[1]
+output_path = sys.argv[2]
+request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+with urlopen(request, timeout=120) as response, open(output_path, "wb") as output:
+    while True:
+        chunk = response.read(1024 * 1024)
+        if not chunk:
+            break
+        output.write(chunk)
+PY
+    return
+  fi
+
+  python - "${url}" "${output_path}" <<'PY'
+import sys
+try:
+    from urllib.request import Request, urlopen
+except ImportError:
+    from urllib2 import Request, urlopen
+
+url = sys.argv[1]
+output_path = sys.argv[2]
+request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+response = urlopen(request, timeout=120)
+try:
+    output = open(output_path, "wb")
+    try:
+        while True:
+            chunk = response.read(1024 * 1024)
+            if not chunk:
+                break
+            output.write(chunk)
+    finally:
+        output.close()
+finally:
+    response.close()
+PY
+}
+
 download_if_needed() {
   local output_path="$1"
   shift
+  local curl_args=("$@")
+  local url="${curl_args[$((${#curl_args[@]} - 1))]}"
+  local is_post=0
 
   if [[ -s "${output_path}" && "${FORCE}" != "1" ]]; then
     echo "[skip] ${output_path}"
     return
   fi
 
+  for arg in "${curl_args[@]}"; do
+    if [[ "${arg}" == "--request" || "${arg}" == "POST" ]]; then
+      is_post=1
+    fi
+  done
+
   echo "[download] ${output_path}"
-  curl --fail --location --retry 3 --retry-delay 3 --user-agent "Mozilla/5.0" "$@" --output "${output_path}"
+  if ! curl --fail --location --retry 3 --retry-delay 3 --user-agent "Mozilla/5.0" "${curl_args[@]}" --output "${output_path}"; then
+    if [[ "${is_post}" == "1" ]]; then
+      echo "[error] curl POST download failed: ${url}" >&2
+      return 1
+    fi
+
+    echo "[warn] curl download failed. Trying Python downloader..." >&2
+    python_download "${url}" "${output_path}"
+  fi
 }
 
 unzip_if_needed() {
