@@ -36,6 +36,7 @@ require_path() {
 
   if [[ ! -e "${path}" ]]; then
     echo "[error] Required path not found: ${path}" >&2
+    echo "[hint] Run: bash scripts/create_reference_data.sh" >&2
     exit 1
   fi
 }

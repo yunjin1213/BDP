@@ -168,6 +168,7 @@ Hotplace Score =
 
 ```bash
 bash scripts/download_data.sh
+bash scripts/create_reference_data.sh
 ```
 
 기본 저장 위치는 레포지토리 상위의 `DataSet` 디렉토리이다.
@@ -195,6 +196,14 @@ DATASET_DIR=/path/to/DataSet bash scripts/download_data.sh
 FORCE=1 bash scripts/download_data.sh
 ```
 
+`create_reference_data.sh`는 분석에 필요한 권역 매핑 데이터와 시험 기간 기준 데이터를 생성한다.
+
+```text
+DataSet/
+├── area_mapping.csv
+└── exam_periods.csv
+```
+
 ### 9.2 HDFS 적재 및 분석 실행
 
 아래 단계는 HDP Sandbox VM에서 실행한다.
@@ -220,7 +229,9 @@ hive -f hive/analysis_queries.hql
 BDP/
 ├── README.md
 ├── scripts/
-│   └── download_data.sh
+│   ├── download_data.sh
+│   ├── create_reference_data.sh
+│   └── upload_hdfs.sh
 ├── src/
 │   ├── preprocess_people.py
 │   ├── preprocess_subway.py
