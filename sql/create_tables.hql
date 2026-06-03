@@ -1,5 +1,3 @@
-SET hive.execution.engine=mr;
-
 CREATE DATABASE IF NOT EXISTS bdp;
 USE bdp;
 

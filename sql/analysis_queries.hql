@@ -1,4 +1,3 @@
-SET hive.execution.engine=mr;
 SET hive.mapred.mode=nonstrict;
 SET hive.exec.dynamic.partition=true;
 SET hive.exec.dynamic.partition.mode=nonstrict;
