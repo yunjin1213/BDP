@@ -32,6 +32,33 @@ require_command() {
   fi
 }
 
+normalize_csv_utf8() {
+  local input_path="$1"
+  local output_path="$2"
+
+  "${PYTHON_BIN}" - "${input_path}" "${output_path}" <<'PY'
+import sys
+
+input_path = sys.argv[1]
+output_path = sys.argv[2]
+
+with open(input_path, "rb") as input_file:
+    raw = input_file.read()
+
+for encoding in ("utf-8-sig", "utf-8", "cp949", "euc-kr"):
+    try:
+        text = raw.decode(encoding)
+        break
+    except UnicodeDecodeError:
+        continue
+else:
+    raise UnicodeDecodeError("csv", raw, 0, 1, "unsupported CSV encoding")
+
+with open(output_path, "wb") as output_file:
+    output_file.write(text.encode("utf-8"))
+PY
+}
+
 require_path() {
   local path="$1"
 
@@ -62,6 +89,7 @@ hdfs_put_csv_dir() {
   local local_dir="$1"
   local hdfs_dir="$2"
   local file_prefix="$3"
+  local normalize_utf8="${4:-0}"
   local index=1
   local staging_dir
   staging_dir="$(mktemp -d "${TMPDIR:-/tmp}/bdp_hdfs_upload.XXXXXX")"
@@ -80,7 +108,11 @@ hdfs_put_csv_dir() {
     local staged_file
     staged_file="$(printf "%s/%s_%03d.csv" "${staging_dir}" "${file_prefix}" "${index}")"
     hdfs_file="$(printf "%s/%s_%03d.csv" "${hdfs_dir}" "${file_prefix}" "${index}")"
-    cp "${csv_file}" "${staged_file}"
+    if [[ "${normalize_utf8}" == "1" ]]; then
+      normalize_csv_utf8 "${csv_file}" "${staged_file}"
+    else
+      cp "${csv_file}" "${staged_file}"
+    fi
     echo "[put] ${csv_file} -> ${hdfs_file}"
     hdfs dfs -put -f "${staged_file}" "${hdfs_file}"
     index=$((index + 1))
@@ -90,6 +122,19 @@ hdfs_put_csv_dir() {
 }
 
 require_command hdfs
+PYTHON_BIN="${PYTHON_BIN:-}"
+if [[ -z "${PYTHON_BIN}" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+  else
+    echo "[error] Required command not found: python3 or python" >&2
+    exit 1
+  fi
+else
+  require_command "${PYTHON_BIN}"
+fi
 require_path "${PEOPLE_DIR}"
 require_path "${SUBWAY_DIR}"
 require_path "${AREA_MAPPING_FILE}"
@@ -109,7 +154,7 @@ hdfs dfs -mkdir -p \
   "${HDFS_RESULTS_DIR}"
 
 echo "== Upload raw datasets =="
-hdfs_put_csv_dir "${PEOPLE_DIR}" "${HDFS_RAW_DIR}/people" "people"
+hdfs_put_csv_dir "${PEOPLE_DIR}" "${HDFS_RAW_DIR}/people" "people" "1"
 hdfs_put_csv_dir "${SUBWAY_DIR}" "${HDFS_RAW_DIR}/subway" "subway"
 
 echo "== Upload mapping files =="

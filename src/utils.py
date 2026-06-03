@@ -2,7 +2,7 @@ from pyspark.sql import functions as F
 
 
 def clean_column_name(name):
-    return name.replace("\ufeff", "").replace('"', "").strip()
+    return name.replace("\ufeff", "").replace('"', "").strip().lstrip("?")
 
 
 def clean_columns(df):

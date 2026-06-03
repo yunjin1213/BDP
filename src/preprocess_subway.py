@@ -9,14 +9,16 @@ from pyspark.sql import functions as F
 from utils import add_date_columns, add_exam_phase, add_time_band, clean_columns
 
 
-TIME_COLUMNS = [
-    ("18-19시간대", 18),
-    ("19-20시간대", 19),
-    ("20-21시간대", 20),
-    ("21-22시간대", 21),
-    ("22-23시간대", 22),
-    ("23-24시간대", 23),
-    ("24시간대이후", 0),
+TIME_COLUMN_CANDIDATES = [
+    (18, ["18시", "18-19시간대"]),
+    (19, ["19시", "19-20시간대"]),
+    (20, ["20시", "20-21시간대"]),
+    (21, ["21시", "21-22시간대"]),
+    (22, ["22시", "22-23시간대"]),
+    (23, ["23시", "23-24시간대"]),
+    (0, ["00시", "24시간대이후"]),
+    (1, ["01시"]),
+    (2, ["02시"]),
 ]
 
 STATION_NAME_ROWS = [
@@ -45,6 +47,21 @@ def parse_args():
     return parser.parse_args()
 
 
+def first_existing_column(columns, candidates, required_name, required=True):
+    for candidate in candidates:
+        if candidate in columns:
+            return candidate
+    if not required:
+        return None
+    raise ValueError(
+        "Missing required subway column for {}. candidates={}, input_columns={}".format(
+            required_name,
+            candidates,
+            columns,
+        )
+    )
+
+
 def main():
     args = parse_args()
     spark = (
@@ -61,8 +78,18 @@ def main():
     )
     raw = clean_columns(raw)
 
+    line_column = first_existing_column(raw.columns, ["호선명", "호선"], "line name")
+
     value_structs = []
-    for column_name, hour in TIME_COLUMNS:
+    for hour, candidates in TIME_COLUMN_CANDIDATES:
+        column_name = first_existing_column(
+            raw.columns,
+            candidates,
+            "{} hour".format(hour),
+            required=hour not in (1, 2),
+        )
+        if column_name is None:
+            continue
         value_structs.append(
             F.struct(
                 F.lit(hour).alias("hour"),
@@ -74,7 +101,7 @@ def main():
         raw.filter(F.col("승하차구분") == "하차")
         .select(
             F.col("수송일자").cast("string").alias("date_id"),
-            F.col("호선명").alias("raw_line_name"),
+            F.col(line_column).alias("raw_line_name"),
             F.col("역명").alias("raw_station_name"),
             F.col("승객유형").alias("passenger_type"),
             F.explode(F.array(*value_structs)).alias("time_value"),
@@ -87,7 +114,13 @@ def main():
             F.col("time_value.hour").alias("hour"),
             F.col("time_value.passenger_count").alias("passenger_count"),
         )
-        .withColumn("date", F.to_date(F.col("date_id"), "yyyyMMdd"))
+        .withColumn(
+            "date",
+            F.coalesce(
+                F.to_date(F.col("date_id"), "yyyyMMdd"),
+                F.to_date(F.col("date_id"), "yyyy-MM-dd"),
+            ),
+        )
         .filter(F.col("date").isNotNull())
         .filter(F.col("passenger_count").isNotNull())
     )
