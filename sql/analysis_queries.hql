@@ -606,3 +606,189 @@ SELECT
   total_after_vs_normal_lift
 FROM result_after_vs_normal
 ORDER BY semester, exam_type, young_after_vs_normal_lift DESC;
+
+DROP TABLE IF EXISTS result_did_young_population;
+CREATE TABLE result_did_young_population
+STORED AS PARQUET
+AS
+SELECT
+  did.semester,
+  did.exam_type,
+  did.treatment_before_young,
+  did.treatment_after_young,
+  CASE
+    WHEN did.treatment_before_young > 0
+    THEN (did.treatment_after_young - did.treatment_before_young)
+      / did.treatment_before_young
+    ELSE NULL
+  END AS treatment_lift,
+  did.control_before_young,
+  did.control_after_young,
+  CASE
+    WHEN did.control_before_young > 0
+    THEN (did.control_after_young - did.control_before_young)
+      / did.control_before_young
+    ELSE NULL
+  END AS control_lift,
+  CASE
+    WHEN did.treatment_before_young > 0 AND did.control_before_young > 0
+    THEN ((did.treatment_after_young - did.treatment_before_young) / did.treatment_before_young)
+      - ((did.control_after_young - did.control_before_young) / did.control_before_young)
+    ELSE NULL
+  END AS did_lift
+FROM (
+  SELECT
+    semester,
+    exam_type,
+    AVG(
+      CASE
+        WHEN area_type IN ('university', 'culture_university', 'university_nightlife')
+          AND phase = 'before'
+        THEN young_20s_population
+        ELSE NULL
+      END
+    ) AS treatment_before_young,
+    AVG(
+      CASE
+        WHEN area_type IN ('university', 'culture_university', 'university_nightlife')
+          AND phase = 'after'
+        THEN young_20s_population
+        ELSE NULL
+      END
+    ) AS treatment_after_young,
+    AVG(
+      CASE
+        WHEN area_type IN ('nightlife', 'nightlife_business')
+          AND phase = 'before'
+        THEN young_20s_population
+        ELSE NULL
+      END
+    ) AS control_before_young,
+    AVG(
+      CASE
+        WHEN area_type IN ('nightlife', 'nightlife_business')
+          AND phase = 'after'
+        THEN young_20s_population
+        ELSE NULL
+      END
+    ) AS control_after_young
+  FROM area_population
+  WHERE phase IN ('before', 'after')
+    AND semester IS NOT NULL
+    AND area_type IN (
+      'university',
+      'culture_university',
+      'university_nightlife',
+      'nightlife',
+      'nightlife_business'
+    )
+  GROUP BY semester, exam_type
+) did;
+
+INSERT OVERWRITE DIRECTORY '${hivevar:results_dir}/did_young_population'
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+SELECT
+  semester,
+  exam_type,
+  treatment_before_young,
+  treatment_after_young,
+  treatment_lift,
+  control_before_young,
+  control_after_young,
+  control_lift,
+  did_lift
+FROM result_did_young_population
+ORDER BY semester, exam_type;
+
+DROP TABLE IF EXISTS result_did_subway_alighting;
+CREATE TABLE result_did_subway_alighting
+STORED AS PARQUET
+AS
+SELECT
+  did.semester,
+  did.exam_type,
+  did.treatment_before_alighting,
+  did.treatment_after_alighting,
+  CASE
+    WHEN did.treatment_before_alighting > 0
+    THEN (did.treatment_after_alighting - did.treatment_before_alighting)
+      / did.treatment_before_alighting
+    ELSE NULL
+  END AS treatment_lift,
+  did.control_before_alighting,
+  did.control_after_alighting,
+  CASE
+    WHEN did.control_before_alighting > 0
+    THEN (did.control_after_alighting - did.control_before_alighting)
+      / did.control_before_alighting
+    ELSE NULL
+  END AS control_lift,
+  CASE
+    WHEN did.treatment_before_alighting > 0 AND did.control_before_alighting > 0
+    THEN ((did.treatment_after_alighting - did.treatment_before_alighting) / did.treatment_before_alighting)
+      - ((did.control_after_alighting - did.control_before_alighting) / did.control_before_alighting)
+    ELSE NULL
+  END AS did_lift
+FROM (
+  SELECT
+    semester,
+    exam_type,
+    AVG(
+      CASE
+        WHEN area_type IN ('university', 'culture_university', 'university_nightlife')
+          AND phase = 'before'
+        THEN alighting_count
+        ELSE NULL
+      END
+    ) AS treatment_before_alighting,
+    AVG(
+      CASE
+        WHEN area_type IN ('university', 'culture_university', 'university_nightlife')
+          AND phase = 'after'
+        THEN alighting_count
+        ELSE NULL
+      END
+    ) AS treatment_after_alighting,
+    AVG(
+      CASE
+        WHEN area_type IN ('nightlife', 'nightlife_business')
+          AND phase = 'before'
+        THEN alighting_count
+        ELSE NULL
+      END
+    ) AS control_before_alighting,
+    AVG(
+      CASE
+        WHEN area_type IN ('nightlife', 'nightlife_business')
+          AND phase = 'after'
+        THEN alighting_count
+        ELSE NULL
+      END
+    ) AS control_after_alighting
+  FROM area_subway
+  WHERE phase IN ('before', 'after')
+    AND semester IS NOT NULL
+    AND area_type IN (
+      'university',
+      'culture_university',
+      'university_nightlife',
+      'nightlife',
+      'nightlife_business'
+    )
+  GROUP BY semester, exam_type
+) did;
+
+INSERT OVERWRITE DIRECTORY '${hivevar:results_dir}/did_subway_alighting'
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+SELECT
+  semester,
+  exam_type,
+  treatment_before_alighting,
+  treatment_after_alighting,
+  treatment_lift,
+  control_before_alighting,
+  control_after_alighting,
+  control_lift,
+  did_lift
+FROM result_did_subway_alighting
+ORDER BY semester, exam_type;

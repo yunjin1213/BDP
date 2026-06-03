@@ -22,6 +22,7 @@
 6. 시험 후 변화는 저녁, 심야 등 시간대별로 다르게 나타나는가?
 7. 시험 후 변화는 평일과 주말에서 다르게 나타나는가?
 8. 시험 후 생활인구는 시험 전뿐 아니라 평상시 대비로도 증가하는가?
+9. 대학가 권역의 시험 후 변화는 유흥상권 대조군 대비 더 크게 나타나는가?
 
 생활인구와 지하철 하차량은 특정 개인이나 대학생을 직접 식별하지 않는다. 따라서 본 프로젝트에서는 "대학생 방문"을 직접 측정하는 것이 아니라, 주요 대학가·청년층 상권의 야간 유동인구 변화를 대리 지표로 분석한다.
 
@@ -156,6 +157,16 @@ Hotplace Score =
 
 절대적으로 사람이 많은 곳과 시험 후 평소보다 크게 증가한 곳을 함께 고려하여 시험 후 핫플 순위를 계산한다.
 
+### 7.5 DID 비교 지표
+
+```text
+DID Lift =
+대학가 권역 시험 후 증가율
+- 유흥상권 대조군 시험 후 증가율
+```
+
+대학가 권역은 `university`, `culture_university`, `university_nightlife`를 treatment group으로 보고, 유흥상권은 `nightlife`, `nightlife_business`를 control group으로 본다. 이 값은 시험 종료 후 대학가 권역의 변화가 유흥상권 대조군 대비 얼마나 더 크게 또는 작게 나타났는지 비교하기 위한 지표이며, 시험 종료가 원인이라고 단정하는 인과 분석 결과로 해석하지 않는다.
+
 ## 8. 기대 결과물
 
 - 시험 전/중/후 권역별 야간 생활인구 변화표
@@ -166,6 +177,7 @@ Hotplace Score =
 - 시간대별 시험 후 20대 생활인구 증가율 비교
 - 평일/주말별 시험 후 20대 생활인구 및 지하철 하차량 증가율 비교
 - 시험 후 20대 생활인구의 평상시 대비 변화 비교
+- 대학가 권역과 유흥상권 대조군의 DID 변화 비교
 - 중간고사 후와 기말고사 후의 차이 분석
 
 ## 9. 실행 방법
@@ -252,6 +264,8 @@ HDFS_BASE_DIR=/user/maria_dev/bdp bash scripts/run_hive_analysis.sh
 | 분석 결과 | `bdp.result_time_band_young_lift` |
 | 분석 결과 | `bdp.result_weekend_effect` |
 | 분석 결과 | `bdp.result_after_vs_normal` |
+| 분석 결과 | `bdp.result_did_young_population` |
+| 분석 결과 | `bdp.result_did_subway_alighting` |
 
 분석 결과 HDFS 디렉토리는 다음과 같다.
 
@@ -264,7 +278,9 @@ HDFS_BASE_DIR=/user/maria_dev/bdp bash scripts/run_hive_analysis.sh
 ├── area_type_change/
 ├── time_band_young_lift/
 ├── weekend_effect/
-└── after_vs_normal/
+├── after_vs_normal/
+├── did_young_population/
+└── did_subway_alighting/
 ```
 
 실행 후 결과 확인 예시는 다음과 같다.

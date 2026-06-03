@@ -53,3 +53,5 @@ DROP TABLE IF EXISTS result_area_type_change;
 DROP TABLE IF EXISTS result_time_band_young_lift;
 DROP TABLE IF EXISTS result_weekend_effect;
 DROP TABLE IF EXISTS result_after_vs_normal;
+DROP TABLE IF EXISTS result_did_young_population;
+DROP TABLE IF EXISTS result_did_subway_alighting;
