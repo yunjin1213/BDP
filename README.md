@@ -208,6 +208,8 @@ DataSet/
 
 아래 단계는 HDP Sandbox VM에서 실행한다.
 
+기본 HDFS 저장 위치는 현재 사용자 기준 `/user/${USER}/bdp`이다. 다른 경로를 사용하려면 `HDFS_BASE_DIR`를 지정한다.
+
 ```bash
 # HDFS 디렉토리 생성 및 원천 데이터 업로드
 bash scripts/upload_hdfs.sh

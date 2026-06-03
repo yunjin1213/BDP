@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
@@ -8,10 +9,11 @@ from utils import add_date_columns, add_exam_phase, add_time_band, clean_columns
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Preprocess Seoul living population data.")
-    parser.add_argument("--input", default="/bdp/raw/people/*.csv")
-    parser.add_argument("--mapping", default="/bdp/mapping/area_mapping.csv")
-    parser.add_argument("--exam-periods", default="/bdp/mapping/exam_periods.csv")
-    parser.add_argument("--output", default="/bdp/processed/area_population")
+    hdfs_base_dir = os.environ.get("HDFS_BASE_DIR", "/user/{}/bdp".format(os.environ.get("USER", "maria_dev")))
+    parser.add_argument("--input", default="{}/raw/people/*.csv".format(hdfs_base_dir))
+    parser.add_argument("--mapping", default="{}/mapping/area_mapping.csv".format(hdfs_base_dir))
+    parser.add_argument("--exam-periods", default="{}/mapping/exam_periods.csv".format(hdfs_base_dir))
+    parser.add_argument("--output", default="{}/processed/area_population".format(hdfs_base_dir))
     return parser.parse_args()
 
 

@@ -5,7 +5,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-HDFS_BASE_DIR="${HDFS_BASE_DIR:-/bdp}"
+HDFS_USER="${HDFS_USER:-${USER:-maria_dev}}"
+HDFS_BASE_DIR="${HDFS_BASE_DIR:-/user/${HDFS_USER}/bdp}"
 
 require_command() {
   local command_name="$1"
