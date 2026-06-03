@@ -213,8 +213,7 @@ DataSet/
 bash scripts/upload_hdfs.sh
 
 # Spark 전처리
-spark-submit src/preprocess_people.py
-spark-submit src/preprocess_subway.py
+bash scripts/run_preprocess.sh
 
 # Hive 테이블 생성 및 분석 쿼리 실행
 hive -f hive/create_tables.hql
@@ -231,7 +230,8 @@ BDP/
 ├── scripts/
 │   ├── download_data.sh
 │   ├── create_reference_data.sh
-│   └── upload_hdfs.sh
+│   ├── upload_hdfs.sh
+│   └── run_preprocess.sh
 ├── src/
 │   ├── preprocess_people.py
 │   ├── preprocess_subway.py

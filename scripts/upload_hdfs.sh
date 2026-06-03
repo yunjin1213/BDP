@@ -57,6 +57,24 @@ hdfs_put() {
   hdfs dfs -put "${local_path}" "${hdfs_path}"
 }
 
+hdfs_put_csv_dir() {
+  local local_dir="$1"
+  local hdfs_dir="$2"
+
+  if [[ "${OVERWRITE}" == "1" ]]; then
+    echo "[overwrite] ${hdfs_dir}"
+    hdfs dfs -rm -r -f "${hdfs_dir}" >/dev/null 2>&1 || true
+  fi
+
+  echo "[mkdir] ${hdfs_dir}"
+  hdfs dfs -mkdir -p "${hdfs_dir}"
+
+  echo "[put csv] ${local_dir}/*.csv -> ${hdfs_dir}"
+  while IFS= read -r -d '' csv_file; do
+    hdfs dfs -put -f "${csv_file}" "${hdfs_dir}/"
+  done < <(find "${local_dir}" -maxdepth 1 -type f -name '*.csv' -print0)
+}
+
 require_command hdfs
 require_path "${PEOPLE_DIR}"
 require_path "${SUBWAY_DIR}"
@@ -77,8 +95,8 @@ hdfs dfs -mkdir -p \
   "${HDFS_RESULTS_DIR}"
 
 echo "== Upload raw datasets =="
-hdfs_put "${PEOPLE_DIR}" "${HDFS_RAW_DIR}/people"
-hdfs_put "${SUBWAY_DIR}" "${HDFS_RAW_DIR}/subway"
+hdfs_put_csv_dir "${PEOPLE_DIR}" "${HDFS_RAW_DIR}/people"
+hdfs_put_csv_dir "${SUBWAY_DIR}" "${HDFS_RAW_DIR}/subway"
 
 echo "== Upload mapping files =="
 hdfs_put "${AREA_MAPPING_FILE}" "${HDFS_MAPPING_DIR}/area_mapping.csv"
